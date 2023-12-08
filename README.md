@@ -13,4 +13,16 @@ https://github.com/PatrickAlphaC/hardhat-smartcontract-lottery-fcc
 * using the `Automation*` interfaces provided by Chainlink as opposed to `Keepers*` (which seems legacy)
   * https://docs.chain.link/chainlink-automation
 * in order to register a new `Upkeep` for the sample Remix app using a Custom trigger
-* 
+* replaced
+    ```javascript
+    vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
+    ```
+  with
+    ```javascript
+    const vrfCoordinatorV2MockDeployment = await deployments.get("VRFCoordinatorV2Mock")
+    vrfCoordinatorV2Mock = await ethers.getContractAt(
+        vrfCoordinatorV2MockDeployment.abi,
+        vrfCoordinatorV2MockDeployment.address
+    )
+    ```
+* replaced `transactionReceipt.events` with `transactionReceipt.logs`
