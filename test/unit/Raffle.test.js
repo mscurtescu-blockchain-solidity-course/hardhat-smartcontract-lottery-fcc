@@ -5,7 +5,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Raffle", async function () {
-        let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer
+        let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer, interval
         const chainId = network.config.chainId
 
         beforeEach(async function () {
@@ -27,14 +27,13 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
             )
 
             raffleEntranceFee = await raffle.getEntranceFee()
+            interval = await raffle.getInterval()
         })
 
         describe("constructor", async function () {
             it('should construct correctly', async () => {
                 const raffleState = await raffle.getRaffleState()
                 assert.equal(raffleState, 0 /* RaffleState.OPEN */)
-
-                const interval = await raffle.getInterval()
                 assert.equal(interval.toString(), networkConfig[chainId]["keepersUpdateInterval"])
             })
         })
@@ -52,6 +51,16 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
             it('should emit event on enter', async () => {
                 await expect(raffle.enterRaffle({ value: raffleEntranceFee })).to.emit(raffle, "RaffleEnter")
-            });
+            })
+
+            it('should not allow entrance when raffle is calculating', async () => {
+                await raffle.enterRaffle({ value: raffleEntranceFee })
+                await network.provider.send("evm_increaseTime", [Number(interval) + 1])
+                await network.provider.send("evm_mine", [])
+
+                // pretend to be Chainlink Automation
+                await raffle.performUpkeep("0x") // changes state to CALCULATING
+                await expect(raffle.enterRaffle({ value: raffleEntranceFee })).to.be.revertedWithCustomError(raffle, "Raffle__NotOpen")
+            })
         })
     })
