@@ -17,7 +17,7 @@ https://github.com/PatrickAlphaC/hardhat-smartcontract-lottery-fcc
     ```javascript
     vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
     ```
-  with
+  (and similar) with
     ```javascript
     const vrfCoordinatorV2MockDeployment = await deployments.get("VRFCoordinatorV2Mock")
     vrfCoordinatorV2Mock = await ethers.getContractAt(
@@ -26,3 +26,11 @@ https://github.com/PatrickAlphaC/hardhat-smartcontract-lottery-fcc
     )
     ```
 * replaced `transactionReceipt.events` with `transactionReceipt.logs`
+* replaced
+    ```javascript
+    await expect(raffle.enterRaffle()).to.be.revertedWith("Raffle__NotEnoughETHEntered")
+    ```
+  (and similar) with
+    ```javascript
+    await expect(raffle.enterRaffle()).to.be.revertedWithCustomError(raffle, "Raffle__NotEnoughETHEntered")
+    ```
