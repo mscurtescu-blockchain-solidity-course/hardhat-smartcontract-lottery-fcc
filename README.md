@@ -45,4 +45,6 @@ https://github.com/PatrickAlphaC/hardhat-smartcontract-lottery-fcc
         await vrfCoordinatorV2Mock.addConsumer(subscriptionId, raffle.address)
     }
     ```
-  * for `performUpkeep` use `"0x"` as argument instead of `[]`
+  * for `performUpkeep` use `"0x"` as argument instead of `[]` (this could be an ethers v6 thing)
+* for static calls replace `raffle.callStatic.checkUpkeep([])` with `raffle.checkUpkeep.staticCall("0x")` (and similar) 
+* 
