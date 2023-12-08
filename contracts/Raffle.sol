@@ -10,6 +10,10 @@ error Raffle__TransferFailed();
 error Raffle__NotOpen();
 error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
 
+/**
+ * @title A sample Raffle contract
+ * @dev This implements Chainlink VRF v2 and Chainlink Automation
+ */
 contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     /* Types */
     enum RaffleState {
@@ -18,18 +22,20 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     }
 
     /* State variables */
-    uint256 private immutable i_entranceFee;
-    address payable[] private s_players;
+    // Chainlink VRF variables
     VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
-    uint256 private immutable i_interval;
 
+    // Constants
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
-    /* Lottery Variables */
+    // Lottery Variables
+    uint256 private immutable i_entranceFee;
+    address payable[] private s_players;
+    uint256 private immutable i_interval;
     address private s_recentWinner;
     RaffleState private s_raffleState;
     uint256 private s_lastTimeStamp;
@@ -100,7 +106,7 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
      * 4. The lottery should be in an "open" state
      */
     function checkUpkeep(
-        bytes calldata /* checkData */
+        bytes memory /* checkData */
     ) public view override returns (bool upkeepNeeded, bytes memory /* performData */) {
         bool isOpen = RaffleState.OPEN == s_raffleState;
         bool timePassed = (block.timestamp - s_lastTimeStamp) > i_interval;
@@ -141,5 +147,25 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
 
     function getRecentWinner() public view returns (address) {
         return s_recentWinner;
+    }
+
+    function getRaffleState() public view  returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getNumWord() public pure returns (uint256) {
+        return NUM_WORDS;
+    }
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
+    }
+
+    function getLatestTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
+    }
+
+    function getRequestConfirmations() public pure returns (uint16){
+        return REQUEST_CONFIRMATIONS;
     }
 }
