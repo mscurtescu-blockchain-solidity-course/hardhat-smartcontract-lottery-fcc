@@ -167,7 +167,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                             let winnerIndex
                             for (let i = startingAccountIndex; i < startingAccountIndex + additionalEntrants; i++) {
-                                if (recentWinner == accounts[i].address) {
+                                if (recentWinner === accounts[i].address) {
                                     winnerIndex = i
                                     break
                                 }

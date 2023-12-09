@@ -43,6 +43,12 @@ module.exports = {
       default: 1,
     },
   },
+  etherscan: {
+    // yarn hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
+    apiKey: {
+      sepolia: ETHERSCAN_API_KEY,
+    },
+  },
   gasReporter: {
     enabled: false,
     outputFile: "gas-report.txt",
