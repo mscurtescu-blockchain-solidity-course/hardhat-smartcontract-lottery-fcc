@@ -124,9 +124,82 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                 const txResponse = await raffle.performUpkeep("0x")
                 const txReceipt = await txResponse.wait(1)
                 const requestId = txReceipt.logs[1].args.requestId
-                assert.isTrue(Number(requestId) > 0)
+                assert.isAbove(requestId, 0)
                 const raffleState = await raffle.getRaffleState()
                 assert.equal(raffleState, 1 /* RaffleState.CALCULATING */)
+            })
+        })
+
+        describe("fulfillRandomWords", function () {
+            beforeEach(async function () {
+                await raffle.enterRaffle({ value: raffleEntranceFee })
+                await network.provider.send("evm_increaseTime", [Number(interval) + 1])
+                await network.provider.send("evm_mine", [])
+            })
+
+            it('can only be called after performUpkeep', async () => {
+                await expect(vrfCoordinatorV2Mock.fulfillRandomWords(0, raffle.getAddress())).to.be.reverted
+                await expect(vrfCoordinatorV2Mock.fulfillRandomWords(1, raffle.getAddress())).to.be.reverted
+            })
+
+            it('should pick a winner, reset the lottery and send money', async () => {
+                const additionalEntrants = 3
+                const startingAccountIndex = 1 // since deployer is at 0
+                const accounts = await ethers.getSigners()
+                let startingWinnerBalance
+                for (let i = startingAccountIndex; i < startingAccountIndex + additionalEntrants; i++) {
+                    const accountConnectedRaffle = raffle.connect(accounts[i])
+                    await accountConnectedRaffle.enterRaffle({value: raffleEntranceFee})
+                }
+                const startingTimeStamp = await raffle.getLatestTimeStamp()
+                await new Promise(async (resolve, reject) => {
+                    raffle.once("WinnerPicked", async () => {
+                        console.log("Found the event!")
+                        try {
+                            const recentWinner = await raffle.getRecentWinner()
+                            const raffleState = await raffle.getRaffleState()
+                            const endingTimeStamp = await raffle.getLatestTimeStamp()
+                            const numPlayers = await raffle.getNumberOfPlayers()
+
+                            assert.equal(numPlayers, 0)
+                            assert.equal(raffleState, 0 /* RaffleState.OPEN */)
+                            assert.isAbove(endingTimeStamp, startingTimeStamp)
+
+                            let winnerIndex
+                            for (let i = startingAccountIndex; i < startingAccountIndex + additionalEntrants; i++) {
+                                if (recentWinner == accounts[i].address) {
+                                    winnerIndex = i
+                                    break
+                                }
+                            }
+
+                            assert.isAbove(winnerIndex, 0)
+                            console.log("winnerIndex", winnerIndex)
+
+                            const winnerBalance = await ethers.provider.getBalance(accounts[winnerIndex].address)
+
+                            assert.equal(
+                                winnerBalance,
+                                startingWinnerBalance +
+                                raffleEntranceFee * BigInt(additionalEntrants) +
+                                raffleEntranceFee
+                            )
+
+                            resolve()
+                        } catch(e) {
+                            reject(e)
+                        }
+                    })
+
+                    // below we fire the event, and then the listener above will pick it up and resolve
+                    const tx = await raffle.performUpkeep("0x")
+                    const txReceipt = await tx.wait(1)
+                    startingWinnerBalance = await ethers.provider.getBalance(accounts[startingAccountIndex].address) // assuming all starting balances are the samer
+                    await vrfCoordinatorV2Mock.fulfillRandomWords(
+                        txReceipt.logs[1].args.requestId,
+                        raffle.getAddress()
+                    )
+                })
             })
         })
     })

@@ -51,4 +51,6 @@ module.exports = {
     // coinmarketcap: COINMARKETCAP_API_KEY,
     token: "ETH", // "MATIC",
   },
-};
+  mocha: {
+    timeout: 500000, // 500 seconds max for running tests
+  },};
